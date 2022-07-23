@@ -91,9 +91,10 @@ int8_t SD_block::writeBlock(uint32_t addr, uint8_t *buff) {
     _errorCode = -24;
     goto fail;
   } if (!waitAvailable(SD_TIMEOUT_WRITE)) {
-    _errorCode = 0;
+    _errorCode = 7;
     goto fail;
-  } SPI.transfer(TOKEN_WIRTEMULT);
+  } !waitAvailable(SD_TIMEOUT_WRITE);
+  SPI.transfer(TOKEN_WIRTEMULT);
   for (uint16_t i = 0; i < 512; i++) SPI.transfer(buff[i]);
   SPI.transfer(0xFF);
   SPI.transfer(0xFF);
@@ -138,4 +139,17 @@ int8_t SD_block::readBlock(uint32_t addr, uint8_t *buff) {
 fail:
   csHigh();
   return _errorCode;
+}
+
+uint8_t SD_block::writeData(uint8_t *buff, uint16_t size) {
+  uint8_t result = 1;
+  if (_currentByte + size >= 512) {
+    _addr++;
+    uint8_t retry = 0;
+    while (!writeBlock(_addr, _virtualSector) && (retry++ < 255));
+    if (retry >= 255) return 0;
+    result = 2;
+  } for (uint8_t i = _currentByte; i < _currentByte + size; i++) _virtualSector[i] = buff[i - _currentByte];
+  _currentByte += size;
+  return result;
 }

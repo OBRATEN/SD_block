@@ -1,6 +1,12 @@
 #ifndef SD_BLOCK_H
 #define SD_BLOCK_H
 
+/*
+  Arduino library for block write/read data without file system;
+  Based on default SD library for Arduino;
+  Author: Arthur Garagulya, SPORADIC, Kursk;
+*/
+
 #include <Arduino.h>
 #include <SPI.h>
 
@@ -48,6 +54,7 @@ class SD_block {
 public: // init
   SD_block(void) {}
   int8_t init(uint8_t cs);
+  uint8_t begin(uint8_t cs);
 public: // status
   int8_t getErrorCode(void) { return _errorCode; }
   uint8_t getStatus(void) { return _status; }
@@ -56,6 +63,7 @@ public: // functional
   uint8_t waitAvailable(uint16_t timeout);
   int8_t readBlock(uint32_t addr, uint8_t *buff);
   int8_t writeBlock(uint32_t addr, uint8_t *buff);
+  uint8_t writeData(uint8_t *buff, uint16_t size);
 private: // status
   int8_t _errorCode;
   uint8_t _status;
@@ -69,6 +77,10 @@ private: // hardware funcs
   uint8_t waitStartBlock(void);
   uint8_t sendCMD(uint8_t cmd, uint32_t arg);
   uint8_t sendACMD(uint8_t cmd, uint32_t arg);
+private:
+  uint8_t _virtualSector[512];
+  uint16_t _currentByte = 0;
+  uint32_t _addr = 0;
 };
 
 #endif // SD_BLOCK_H
